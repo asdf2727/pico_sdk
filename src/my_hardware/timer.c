@@ -2,10 +2,10 @@
 
 #include <hardware/structs/timer.h>
 
-uint32_t us_count() {
+inline uint32_t us_count() {
 	return timer_hw->timerawl;
 }
-uint64_t us_count_long() {
+inline uint64_t us_count_long() {
 	return ((uint64_t)timer_hw->timerawh << 32) | timer_hw->timerawl;
 }
 

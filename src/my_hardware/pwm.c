@@ -32,7 +32,13 @@ void pwm_set_freq(int slice_no, float target_freq) {
 	slice->cc = 0;
 }
 
+void pwm_set_enabled(int slice_no, int enabled) {
+	pwm_slice_hw_t *slice = &pwm_hw->slice[slice_no];
+	REG_RW_SET1(slice->csr, PWM_CH0_CSR_EN, enabled);
+}
+
 void pwm_set_duty_cycle(int pin_no, float duty_cycle) {
+	//assert(duty_cycle >= 0);
 	pwm_slice_hw_t *slice = &pwm_hw->slice[PWM_PIN_TO_SLICE(pin_no)];
 	uint32_t threshold = nearbyintf(REG_GET(slice->top, PWM_CH0_TOP) * duty_cycle);
 	if (pin_no & 1) {
@@ -43,7 +49,13 @@ void pwm_set_duty_cycle(int pin_no, float duty_cycle) {
 	}
 }
 
-void pwm_set_enabled(int slice_no, int enabled) {
-	pwm_slice_hw_t *slice = &pwm_hw->slice[slice_no];
-	REG_RW_SET1(slice->csr, PWM_CH0_CSR_EN, enabled);
+float pwm_get_duty_cycle(int pin_no) {
+	pwm_slice_hw_t *slice = &pwm_hw->slice[PWM_PIN_TO_SLICE(pin_no)];
+	uint32_t cycle = REG_GET(slice->top, PWM_CH0_TOP);
+	if (pin_no & 1) {
+		return (float)REG_GET(slice->cc, PWM_CH0_CC_B) / cycle;
+	}
+	else {
+		return (float)REG_GET(slice->cc, PWM_CH0_CC_A) / cycle;
+	}
 }

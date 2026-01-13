@@ -1,43 +1,57 @@
-#include <hardware/structs/sio.h>
-#include <hardware/structs/io_bank0.h>
-
-#include "my_hardware/utils.h"
-#include "my_hardware/pwm.h"
 #include "my_hardware/timer.h"
+#include "my_hardware/sio.h"
+#include "comp/encoder.h"
+#include "comp/motor.h"
 
-#define LED 25
-#define M1A 19
-#define M1B 18
-#define M2A 21
-#define M2B 20
+#include "logging.h"
+#include "src/comp/motor.h"
+#include "src/comp/ultrasonic.h"
+#include <hardware/regs/intctrl.h>
+#include <hardware/structs/nvic.h>
 
-#define BIT(bit) (1ul << (bit))
+#define PIN_LED 25
 
-#define PIN_SET_TYPE(pin, TYPE) io_bank0_hw->io[pin].ctrl = REG_VAL(IO_BANK0_GPIO0_CTRL_FUNCSEL, GPIO_FUNC_##TYPE)
+motor_t *motor_l;
+motor_t *motor_r;
 
-void setup() {
-	PIN_SET_TYPE(LED, SIO);
-	PIN_SET_TYPE(M1B, SIO);
-	PIN_SET_TYPE(M2B, SIO);
-	sio_hw->gpio_oe_set = BIT(LED) | BIT(M1B) | BIT(M2B);
-	sio_hw->gpio_clr = BIT(LED) | BIT(M1B) | BIT(M2B);
-	
-	PIN_SET_TYPE(M1A, PWM);
-	pwm_set_freq(PWM_PIN_TO_SLICE(M1A), 1000);
-	pwm_set_enabled(PWM_PIN_TO_SLICE(M1A), 1);
-	PIN_SET_TYPE(M2A, PWM);
-	pwm_set_freq(PWM_PIN_TO_SLICE(M2A), 1000);
-	pwm_set_enabled(PWM_PIN_TO_SLICE(M2A), 1);
+encoder_t *enc; // On L motor
+
+ultrasonic_t *front;
+ultrasonic_t *side;
+
+extern void isr_io_bank0() {
+	if (enc != NULL && encoder_irq(enc)) return;
+	if (front != NULL && ultrasonic_irq(front)) return;
+	//if (side != NULL && ultrasonic_irq(side)) return;
+	log("Unrecognised IO bank0 interrupt!");
 }
 
-#include <stdio.h>
+void setup() {
+	motor_l = create_motor(19, 18);
+	motor_r = create_motor(21, 20);
+	enc = create_encoder(3);
+	front = create_ultrasonic(7, 6);
+	//side = create_ultrasonic(9, 8);
 
-uint32_t loop_len = 5000000;
+	nvic_hw->icpr = BIT(IO_IRQ_BANK0);
+	nvic_hw->iser = BIT(IO_IRQ_BANK0);
+}
+
+uint32_t loop_len = 10000000;
+uint32_t last_time = 0;
 
 void loop() {
+	update_encoder(enc);
+	update_ultrasonic(front);
+	//update_ultrasonic(side);
+
 	uint32_t time = us_count();
-	printf("%u\n", time);
-	pwm_set_duty_cycle(M1A, (float)(loop_len - time % loop_len) / loop_len);
-	pwm_set_duty_cycle(M2A, (float)(loop_len - time % loop_len) / loop_len);
-	my_busy_wait_ms(100);
+	float speed = (float)(loop_len - time % loop_len) / loop_len;
+	//set_speed(motor_l, speed);
+	//set_speed(motor_r, speed);
+	
+	if (time - last_time >= 100000) {
+		last_time = time;
+		log("%f %f %u", speed, get_speed(enc), get_milimeters(front));
+	}
 }

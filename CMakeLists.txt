@@ -37,6 +37,8 @@ pico_sdk_init()
 file(GLOB SOURCES
   "src/my_hardware/*.h"
   "src/my_hardware/*.c"
+  "src/comp/*.h"
+  "src/comp/*.c"
   "src/*.c"
 )
 add_executable(pico_sdk ${SOURCES})
