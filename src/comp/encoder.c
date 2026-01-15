@@ -35,15 +35,14 @@ void delete_encoder(encoder_t *enc) {
 	free(enc);
 }
 
-inline int encoder_irq(encoder_t *enc) {
-	if (!(io_bank0_hw->proc0_irq_ctrl.ints[enc->pin >> 3] & IRQ_PIN_BITS(4 | 8, enc->pin))) return false;
-	io_bank0_hw->intr[enc->pin >> 3] = IRQ_PIN_BITS(4 | 8, enc->pin);
-
+int encoder_irq(encoder_t *enc) {
+	if (!IRQ_STATUS(enc->pin, 4 | 8)) return false;
 	enc->last_update = us_count();
+	IRQ_CLEAR(enc->pin, 4 | 8);
 	return true;
 }
 
-//#include "../logging.h"
+#include "../logging.h"
 
 #define SPOKES 20
 #define SMOOTH 0
@@ -51,7 +50,7 @@ inline int encoder_irq(encoder_t *enc) {
 void update_encoder(encoder_t *enc) {
 	if (enc->prev_update == enc->last_update) return;
 	if (enc->last_update - enc->prev_update < 1000) {
-		//log("Encoder glitch %u %u", enc->last_update - enc->prev_update, enc->last_delta);
+		logf("Encoder glitch %u %u", enc->last_update - enc->prev_update, enc->last_delta);
 		enc->last_update = enc->prev_update;
 		return;
 	}

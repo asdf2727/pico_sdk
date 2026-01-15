@@ -41,13 +41,13 @@ void delete_ultrasonic(ultrasonic_t *sonic) {
 
 int ultrasonic_irq(ultrasonic_t *sonic) {
 	if (IRQ_STATUS(sonic->echo_pin, 8)) {
-		IRQ_CLEAR(sonic->echo_pin, 8);
 		sonic->last_send = us_count();
+		IRQ_CLEAR(sonic->echo_pin, 8);
 		return true;
 	}
 	if (IRQ_STATUS(sonic->echo_pin, 4)) {
-		IRQ_CLEAR(sonic->echo_pin, 4);
 		sonic->last_receive = us_count();
+		IRQ_CLEAR(sonic->echo_pin, 4);
 		return true;
 	}
 	return false;

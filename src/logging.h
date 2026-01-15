@@ -1,7 +1,25 @@
 #pragma once
 
-#include <stdio.h>
+//#define DISABLE_LOGGING
 
+#ifdef DISABLE_LOGGING
+
+#define log(format)
+#define logf(format, ...)
+
+#else
+
+#include <stdio.h>
 #include "my_hardware/timer.h"
 
-#define log(...) printf("%llu: ", us_count_long()); printf(__VA_ARGS__); printf("\n")
+#define log(format) { \
+	printf("%llu: " format "\n", us_count_long()); \
+}
+#define logf(format, ...) { \
+	printf("%llu: " format "\n", us_count_long(), __VA_ARGS__); \
+}
+#define logcsv(format, ...) { \
+	printf("%llu," format "\n", us_count_long(), __VA_ARGS__); \
+}
+
+#endif

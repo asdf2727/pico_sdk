@@ -1,6 +1,6 @@
 #pragma once
 
-#define BIT(bit) (1ul << (bit))
+#define BIT(bit) (1u << (bit))
 
 #define REG_GET(reg, NAME) (((reg) & NAME##_BITS) >> NAME##_LSB)
 #define REG_VAL(NAME, val) (((val) << NAME##_LSB) & NAME##_BITS)
