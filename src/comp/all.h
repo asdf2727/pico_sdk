@@ -17,7 +17,3 @@ extern ultrasonic_t *front;
 
 extern uint16_t ir_l;
 extern uint16_t ir_r;
-
-void setup_components();
-
-void update_components();

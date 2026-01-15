@@ -68,7 +68,7 @@ void adc_set_sample_rate(float freq) {
 
 void adc_sanity_check() {
 	if (REG_GET(adc_hw->fcs, ADC_FCS_OVER) | REG_GET(adc_hw->fcs, ADC_FCS_UNDER)) {
+		log("ADC reset");
 		adc_start_looping();
-		logf("%u %u %u", REG_GET(adc_hw->fcs, ADC_FCS_LEVEL), REG_GET(adc_hw->fcs, ADC_FCS_OVER), REG_GET(adc_hw->fcs, ADC_FCS_UNDER));
 	}
 }

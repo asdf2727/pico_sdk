@@ -11,9 +11,9 @@ void delete_encoder(encoder_t *enc);
 
 int encoder_irq(encoder_t *enc);
 
-void update_encoder(encoder_t *enc);
+void update_encoder(encoder_t *enc, int direction);
 
 float get_speed(encoder_t *enc);
 int32_t get_spokes(encoder_t *enc);
-int32_t get_angle(encoder_t *enc);
-int32_t get_turns(encoder_t *enc);
+float get_angle(encoder_t *enc);
+float get_turns(encoder_t *enc);

@@ -17,7 +17,8 @@ struct encoder_t {
 };
 
 encoder_t *create_encoder(int pin) {
-	io_bank0_hw->proc0_irq_ctrl.inte[pin >> 3] |= IRQ_PIN_BITS(4 | 8, pin);
+	IRQ_ENABLE(pin, 4 | 8);
+	//IRQ_FORCE(pin, 4);
 
 	encoder_t *enc = malloc(sizeof(encoder_t));
 	enc->prev2_update = 0;
@@ -31,7 +32,7 @@ encoder_t *create_encoder(int pin) {
 }
 
 void delete_encoder(encoder_t *enc) {
-	io_bank0_hw->proc0_irq_ctrl.inte[enc->pin >> 3] &= ~IRQ_PIN_BITS(4 | 8, enc->pin);
+	IRQ_DISABLE(enc->pin);
 	free(enc);
 }
 
@@ -47,10 +48,10 @@ int encoder_irq(encoder_t *enc) {
 #define SPOKES 20
 #define SMOOTH 0
 
-void update_encoder(encoder_t *enc) {
+void update_encoder(encoder_t *enc, int direction) {
 	if (enc->prev_update == enc->last_update) return;
 	if (enc->last_update - enc->prev_update < 1000) {
-		logf("Encoder glitch %u %u", enc->last_update - enc->prev_update, enc->last_delta);
+		//logf("Encoder glitch %u %u", enc->last_update - enc->prev_update, enc->last_delta);
 		enc->last_update = enc->prev_update;
 		return;
 	}
@@ -58,7 +59,7 @@ void update_encoder(encoder_t *enc) {
 	enc->prev2_update = enc->prev_update;
 	enc->prev_update = enc->last_update;
 	enc->speed = SMOOTH * enc->speed + (float)((1 - SMOOTH) * M_PI * 500000) / (SPOKES * enc->last_delta);
-	enc->angle += 1;
+	enc->angle += direction;
 }
 
 #undef SMOOTH
@@ -75,11 +76,11 @@ inline int32_t get_spokes(encoder_t *enc) {
 	return enc->angle;
 }
 // Consider adding speed term to make it continuous
-inline int32_t get_angle(encoder_t *enc) {
-	return enc->angle * (float)M_PI / SPOKES;
+inline float get_angle(encoder_t *enc) {
+	return (float)enc->angle * (float)M_PI / SPOKES;
 }
-inline int32_t get_turns(encoder_t *enc) {
-	return enc->angle / SPOKES;
+inline float get_turns(encoder_t *enc) {
+	return (float)enc->angle / SPOKES;
 }
 
 // TODO compute regression of speed given duty cycle

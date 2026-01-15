@@ -10,7 +10,7 @@
 motor_t *motor_l;
 motor_t *motor_r;
 
-encoder_t *enc; // On L motor
+encoder_t *enc;
 
 ultrasonic_t *front;
 
@@ -19,8 +19,8 @@ uint16_t ir_r;
 
 #include "../logging.h"
 
-extern void isr_io_bank0() {
-	log("IO bank0 interrupt!");
+extern volatile void isr_io_bank0() {
+	//log("IO bank0 interrupt!");
 	if (enc != NULL && encoder_irq(enc)) return;
 	if (front != NULL && ultrasonic_irq(front)) return;
 	log("Unrecognised IO bank0 interrupt!");
@@ -30,8 +30,8 @@ void setup_components() {
 	PIN_SET_TYPE(PIN_LED, SIO);
 	SIO_SET_OUT(PIN_LED);
 
-	motor_l = create_motor(19, 18);
-	motor_r = create_motor(21, 20);
+	motor_l = create_motor(18, 19, -2.05f, 6.5f, -0.68f);
+	motor_r = create_motor(20, 21, -2.28f, 7.02f, -0.32f);
 	enc = create_encoder(3);
 	front = create_ultrasonic(7, 6);
 
@@ -42,12 +42,12 @@ void setup_components() {
 	
 	nvic_hw->icpr = BIT(IO_IRQ_BANK0);
 	nvic_hw->iser = BIT(IO_IRQ_BANK0);
-	//nvic_hw->icpr = BIT(ADC_IRQ_FIFO);
-	//nvic_hw->iser = BIT(ADC_IRQ_FIFO);
+	nvic_hw->icpr = BIT(ADC_IRQ_FIFO);
+	nvic_hw->iser = BIT(ADC_IRQ_FIFO);
 }
 
 void update_components() {
-	update_encoder(enc);
+	update_encoder(enc, get_direction(motor_r));
 	update_ultrasonic(front);
 	//adc_sanity_check();
 

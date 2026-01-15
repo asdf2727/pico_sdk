@@ -1,24 +1,16 @@
 #include "comp/all.h"
-#include "solution/task1.h"
-#include "my_hardware/timer.h"
 
-#include <hardware/regs/intctrl.h>
-#include <hardware/structs/nvic.h>
+#include "logging.h"
+#include "src/my_hardware/timer.h"
 
 void setup() {
 }
 
-uint32_t loop_len = 10000000;
-uint32_t last_time = 0;
-
-#include "logging.h"
+#define LOOP_SIZE 5000000
 
 void loop() {
-	//task1_loop();
-
-	uint32_t time = us_count();
-	if (time - last_time >= 100000) {
-		last_time = time;
-		logcsv("%u,%u,%u,%u", get_spokes(enc), get_milimeters(front), ir_l, ir_r);
-	}
+	float speed = 4.0f * (LOOP_SIZE - us_count() % LOOP_SIZE) / LOOP_SIZE;
+	set_speed(motor_l, speed);
+	set_speed(motor_r, speed);
+	logcsv("%f,%f,%f", get_speed(enc), est_speed(motor_l), est_speed(motor_r));
 }
