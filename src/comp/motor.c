@@ -5,12 +5,17 @@
 
 #include "../my_hardware/pwm.h"
 #include "../my_hardware/sio.h"
+#include "src/my_hardware/timer.h"
 
+#define MAX_ACCEL 1 // in cm/s^2
 
 struct motor_t {
 	int pinA;
 	int pinB;
 	float a, b, c;
+	float max_speed;
+	float last_duty;
+	uint32_t last_time;
 };
 
 motor_t *create_motor(int pinA, int pinB, float a, float b, float c) {
@@ -26,6 +31,9 @@ motor_t *create_motor(int pinA, int pinB, float a, float b, float c) {
 	motor->a = a;
 	motor->b = b;
 	motor->c = c;
+	motor->max_speed = motor->a + motor->b + motor->c;
+	motor->last_duty = 0;
+	motor->last_time = 0;
 	return motor;
 }
 
@@ -36,6 +44,13 @@ void delete_motor(motor_t *motor) {
 }
 
 void set_duty(motor_t *motor, float duty) {
+	uint32_t time = us_count();
+	float delta_duty = (time - motor->last_time) / (1000000 * motor->max_speed) * MAX_ACCEL;
+	if (duty > motor->last_duty + delta_duty) duty = motor->last_duty + delta_duty;
+	if (duty < motor->last_duty - delta_duty) duty = motor->last_duty - delta_duty;
+	motor->last_duty = duty;
+	motor->last_time = time;
+
 	if (duty < 0) {
 		duty += 1;
 		SIO_SET(motor->pinB);
@@ -49,8 +64,13 @@ void set_duty(motor_t *motor, float duty) {
 #include "../logging.h"
 
 void set_speed(motor_t *motor, float speed) {
+	int sign = 1;
+	if (speed < 0) {
+		speed = -speed;
+		sign = -1;
+	}
 	float delta = motor->b * motor->b - 4 * motor->a * (motor->c - speed);
-	if (delta < 0) {	
+	if (delta < 0) {
 		log("Speed delta negative!!!");
 		delta = 0;
 	}
@@ -59,15 +79,10 @@ void set_speed(motor_t *motor, float speed) {
 		log("Duty over 1!!!");
 		duty = 1;
 	}
-	if (duty < -1) {
-		log("Duty under -1!!!");
-		duty = -1;
-	}
-	set_duty(motor, duty);
+	set_duty(motor, sign * duty);
 }
 float est_speed(motor_t *motor) {
-	float duty_cycle = pwm_get_duty_cycle(motor->pinA);
-	return motor->a * duty_cycle * duty_cycle + motor->b * duty_cycle + motor->c;
+	return motor->a * motor->last_duty * motor->last_duty + motor->b * motor->last_duty + motor->c;
 }
 inline int get_direction(motor_t *motor) {
 	return 1 - 2 * SIO_OUT_GET(motor->pinB);

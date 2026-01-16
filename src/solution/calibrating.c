@@ -62,17 +62,18 @@ void solve_reg_exp(quad_reg_t *reg, double *a, double *b, double *c) {
 	*c = Dc / D;
 }
 void solve_reg_lin(quad_reg_lin_t *reg, double *a, double *b, double *c) {
-	reg->sol.Sx   /= reg->n;
-	reg->sol.Sx2  /= reg->n;
-	reg->sol.Sx3  /= reg->n;
-	reg->sol.Sx4  /= reg->n;
-	reg->sol.Sy   /= reg->n;
-	reg->sol.Sxy  /= reg->n;
-	reg->sol.Sx2y /= reg->n;
-	solve_reg_exp((quad_reg_t *)reg, a, b, c);
+	quad_reg_t copy = reg->sol;
+	copy.Sx   /= reg->n;
+	copy.Sx2  /= reg->n;
+	copy.Sx3  /= reg->n;
+	copy.Sx4  /= reg->n;
+	copy.Sy   /= reg->n;
+	copy.Sxy  /= reg->n;
+	copy.Sx2y /= reg->n;
+	solve_reg_exp(&copy, a, b, c);
 }
 
-#define LOOP_TIME 4000000
+#define LOOP_TIME 10000000
 #define POLL_RATE 10000
 
 uint32_t last_point = 0;
@@ -84,14 +85,14 @@ float speed, read_speed = 0;
 double a, b, c;
 
 float triangle(float gen) {
-	return (gen > 0.5 ? 2 - 2 * gen : 2 * gen) * (1 - 0.3) + 0.3;
+	return (gen > 0.5 ? 2 - 2 * gen : 2 * gen) * (1 - 0.5) + 0.5;
 }
 
 void calibrate_loop() {
 	uint32_t time = us_count();
 	if (last_point + POLL_RATE < time) {
 		last_point += POLL_RATE;
-		read_speed = get_speed(enc);
+		read_speed = get_speed(enc) * WHEEL_RADIUS;
 		if (read_speed) {
 			add_elem_lin(&reg, speed, read_speed);
 			//add_elem_exp(&reg.sol, speed, read_speed, 0.999);
@@ -107,7 +108,11 @@ void calibrate_loop() {
 	set_duty(motor_r, speed);
 	if (last_show + LOOP_TIME <= time) {
 		last_show += LOOP_TIME;
-		solve_reg_lin(&reg, &a, &b, &c);
-		memset(&reg.sol, 0x00, sizeof(quad_reg_lin_t));
+		if (last_show <= LOOP_TIME) {
+			memset(&reg, 0x00, sizeof(quad_reg_lin_t));
+		}
+		else {
+			solve_reg_lin(&reg, &a, &b, &c);
+		}
 	}
 }

@@ -1,16 +1,19 @@
 #include "comp/all.h"
 
 #include "logging.h"
-#include "src/my_hardware/timer.h"
+#include "my_hardware/timer.h"
+#include "solution/calibrating.h"
 
 void setup() {
 }
 
-#define LOOP_SIZE 5000000
+#define LOOP_SIZE 20000000
 
 void loop() {
-	float speed = 4.0f * (LOOP_SIZE - us_count() % LOOP_SIZE) / LOOP_SIZE;
+	//calibrate_loop();
+	float speed = 9.0f * (((float)(LOOP_SIZE - us_count() % LOOP_SIZE) / LOOP_SIZE) * 0.5 + 0.5);
 	set_speed(motor_l, speed);
 	set_speed(motor_r, speed);
-	logcsv("%f,%f,%f", get_speed(enc), est_speed(motor_l), est_speed(motor_r));
+	float enc_speed = get_speed(enc);
+	logcsv("%f,%f", enc_speed, enc_speed - speed);
 }

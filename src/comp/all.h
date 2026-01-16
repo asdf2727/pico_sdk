@@ -10,8 +10,10 @@
 
 extern motor_t *motor_l;
 extern motor_t *motor_r;
+extern float max_speed_l;
+extern float max_speed_r;
 
-extern encoder_t *enc; // On L motor
+extern encoder_t *enc;
 
 extern ultrasonic_t *front;
 

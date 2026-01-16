@@ -51,7 +51,7 @@ int encoder_irq(encoder_t *enc) {
 void update_encoder(encoder_t *enc, int direction) {
 	if (enc->prev_update == enc->last_update) return;
 	if (enc->last_update - enc->prev_update < 1000) {
-		//logf("Encoder glitch %u %u", enc->last_update - enc->prev_update, enc->last_delta);
+		logf("Encoder glitch %u %u", enc->last_update - enc->prev_update, enc->last_delta);
 		enc->last_update = enc->prev_update;
 		return;
 	}
@@ -82,5 +82,3 @@ inline float get_angle(encoder_t *enc) {
 inline float get_turns(encoder_t *enc) {
 	return (float)enc->angle / SPOKES;
 }
-
-// TODO compute regression of speed given duty cycle
