@@ -54,7 +54,7 @@ void dma_pm_delete(dma_pm_t *dma) {
 	free(dma);
 }
 
-void *dma_pm_value(dma_pm_t *dma, uint32_t offset) {
+void *dma_pm_value(dma_pm_t *dma, uint32_t ir_offset) {
 	if (dma == NULL) {
 		log("DMA is null!");
 		return NULL;
@@ -65,5 +65,5 @@ void *dma_pm_value(dma_pm_t *dma, uint32_t offset) {
 	//		REG_GET(*(uint32_t *)((void *)dma + 0x804), DMA_CH0_DBG_TCR));
 	//}
 	logf("%x %x", dma->channel->transfer_count, (void *)dma->channel->write_addr - dma->ring);
-	return dma->ring + offset;
+	return dma->ring + ir_offset;
 }

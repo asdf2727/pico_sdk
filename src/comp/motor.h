@@ -1,9 +1,12 @@
 #pragma once
 
+#include <stdint.h>
+
 struct motor_t;
 typedef struct motor_t motor_t;
 
-#define WHEEL_RADIUS 3 // cm
+#define WHEEL_RADIUS 3.25f // cm
+#define MIN_DUTY 0.3f
 
 motor_t *create_motor(int pinA, int pinB, float a, float b, float c);
 void delete_motor(motor_t *motor);

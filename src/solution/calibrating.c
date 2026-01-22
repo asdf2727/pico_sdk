@@ -73,11 +73,13 @@ void solve_reg_lin(quad_reg_lin_t *reg, double *a, double *b, double *c) {
 	solve_reg_exp(&copy, a, b, c);
 }
 
-#define LOOP_TIME 10000000
+#define LOOP_TIME 4000000
 #define POLL_RATE 10000
 
-uint32_t last_point = 0;
-uint32_t last_show = 0;
+extern uint32_t last_reset;
+extern uint32_t next_show;
+uint32_t next_point = 0;
+uint32_t loop_count = 0;
 
 quad_reg_lin_t reg;
 
@@ -85,34 +87,47 @@ float speed, read_speed = 0;
 double a, b, c;
 
 float triangle(float gen) {
-	return (gen > 0.5 ? 2 - 2 * gen : 2 * gen) * (1 - 0.5) + 0.5;
+	return (gen < 0.5 ? 1 - 2 * gen : 2 * gen - 1) * (1 - MIN_DUTY) + MIN_DUTY;
 }
 
-void calibrate_loop() {
-	uint32_t time = us_count();
-	if (last_point + POLL_RATE < time) {
-		last_point += POLL_RATE;
-		read_speed = get_speed(enc) * WHEEL_RADIUS;
-		if (read_speed) {
-			add_elem_lin(&reg, speed, read_speed);
-			//add_elem_exp(&reg.sol, speed, read_speed, 0.999);
-			//solve_reg_exp(&reg.sol, &a, &b, &c);
+extern float norm_l, norm_r;
 
-			//logcsv("%f,%f", speed, read_speed);
-			//logcsv("%f,%f,%f,%u", a, b, c, reg.n);
-			logcsv("%f,%f,%f,%f,%f,%u", speed, read_speed, a, b, c, reg.n);
-		}
+void calibrate_loop() {
+	if (next_show <= us_count()) {
+		next_show += 50000;
+		logcsv("%f,%f,%f,%f,%f,%u", speed, read_speed, a, b, c, reg.n);
+	}
+	if (~ir_status & 1) {
+		//logf("%f %f", norm_l, norm_r);
+		last_reset = us_count();
+		next_point = POLL_RATE;
+		memset(&reg, 0x00, sizeof(quad_reg_lin_t));
+		loop_count = 0;
+		set_duty(motor_l, 0);
+		set_duty(motor_r, 0);
+		return;
+	}
+	uint32_t time = us_count() - last_reset;
+	if (next_point < time) {
+		read_speed = get_speed(enc) * WHEEL_RADIUS;
+		add_elem_lin(&reg, speed, read_speed);
+		//add_elem_exp(&reg.sol, speed, read_speed, 0.999);
+		//solve_reg_exp(&reg.sol, &a, &b, &c);
+
+		//logcsv("%f,%f", speed, read_speed);
+		//logcsv("%f,%f,%f,%u", a, b, c, reg.n);
+		next_point += POLL_RATE;
 	}
 	speed = triangle((float)(time % LOOP_TIME) / LOOP_TIME);
 	set_duty(motor_l, speed);
 	set_duty(motor_r, speed);
-	if (last_show + LOOP_TIME <= time) {
-		last_show += LOOP_TIME;
-		if (last_show <= LOOP_TIME) {
+	if (LOOP_TIME <= time) {
+		last_reset += LOOP_TIME;
+		loop_count++;
+		next_point = POLL_RATE;
+		solve_reg_lin(&reg, &a, &b, &c);
+		if(loop_count <= 1) {
 			memset(&reg, 0x00, sizeof(quad_reg_lin_t));
-		}
-		else {
-			solve_reg_lin(&reg, &a, &b, &c);
 		}
 	}
 }

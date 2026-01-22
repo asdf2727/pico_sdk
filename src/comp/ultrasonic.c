@@ -29,8 +29,8 @@ ultrasonic_t *create_ultrasonic(int trig_pin, int echo_pin) {
 	sonic->last_receive = 0;
 	sonic->prev_receive = 0;
 	sonic->next_set = 0;
-	sonic->next_reset = 0;
-	sonic->mms = 0;
+	sonic->next_reset = 11;
+	sonic->mms = 10000;
 	return sonic;
 }
 
@@ -38,6 +38,8 @@ void delete_ultrasonic(ultrasonic_t *sonic) {
 	IRQ_DISABLE(sonic->echo_pin);
 	free(sonic);
 }
+
+#include "../logging.h"
 
 int ultrasonic_irq(ultrasonic_t *sonic) {
 	if (IRQ_STATUS(sonic->echo_pin, 8)) {
@@ -58,6 +60,10 @@ void update_ultrasonic(ultrasonic_t *sonic) {
 	if (sonic->last_receive != sonic->prev_receive) {
 		sonic->prev_receive = sonic->last_receive;
 		uint32_t delta = sonic->last_receive - sonic->last_send;
+		if (delta > 50000 || delta < 10) {
+			logf("Ultrasonic glitch %u", delta);
+			return;
+		}
 		sonic->mms = delta * 343 / 2000;
 		//if (sonic->next_set > time + 3 * delta) {
 		//	sonic->next_set = time + 3 * delta;
@@ -70,7 +76,7 @@ void update_ultrasonic(ultrasonic_t *sonic) {
 		SIO_SET(sonic->trig_pin);
 	}
 	if (sonic->next_reset < time) {
-		sonic->next_reset = sonic->next_set + 11;
+		sonic->next_reset = sonic->next_set + 20;
 		SIO_CLEAR(sonic->trig_pin);
 	}
 }

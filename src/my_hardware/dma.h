@@ -9,4 +9,4 @@ typedef struct dma_pm_t dma_pm_t;
 
 //void dma_pm_delete(dma_pm_t *dma);
 
-//void *dma_pm_value(dma_pm_t *dma, uint32_t offset);
+//void *dma_pm_value(dma_pm_t *dma, uint32_t ir_offset);

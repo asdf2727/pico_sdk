@@ -14,5 +14,5 @@ float sys_freq() {
     return PLL_FREQ(pll_sys_hw);
 }
 float usb_freq() {
-    return PLL_FREQ(pll_sys_hw);
+    return PLL_FREQ(pll_usb_hw);
 }

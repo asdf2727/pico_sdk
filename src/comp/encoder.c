@@ -50,8 +50,8 @@ int encoder_irq(encoder_t *enc) {
 
 void update_encoder(encoder_t *enc, int direction) {
 	if (enc->prev_update == enc->last_update) return;
-	if (enc->last_update - enc->prev_update < 1000) {
-		logf("Encoder glitch %u %u", enc->last_update - enc->prev_update, enc->last_delta);
+	if (enc->last_update - enc->prev_update < 100) {
+		//logf("Encoder glitch %u %u", enc->last_update - enc->prev_update, enc->last_delta);
 		enc->last_update = enc->prev_update;
 		return;
 	}
@@ -59,6 +59,7 @@ void update_encoder(encoder_t *enc, int direction) {
 	enc->prev2_update = enc->prev_update;
 	enc->prev_update = enc->last_update;
 	enc->speed = SMOOTH * enc->speed + (float)((1 - SMOOTH) * M_PI * 500000) / (SPOKES * enc->last_delta);
+	enc->speed *= direction;
 	enc->angle += direction;
 }
 

@@ -9,12 +9,14 @@
 #include "utils.h"
 
 uint16_t *adc_out[5];
+uint16_t *isr_ptrs[6];
 
 volatile extern void isr_adc_fifo() {
-	#pragma unroll
-	for (int i = 0; i < 5; i++) {
-		if (adc_out[i] == NULL) continue;
-		*adc_out[i] = adc_hw->fifo;
+	for (uint16_t **ptr = isr_ptrs; *ptr != NULL; ptr++) {
+		**ptr = adc_hw->fifo & 0x7fff;
+	}
+	for (uint16_t **ptr = isr_ptrs; *ptr != NULL; ptr++) {
+		**ptr += adc_hw->fifo & 0x7fff;
 	}
 }
 
@@ -28,12 +30,13 @@ void adc_start_looping() {
 		if (adc_out[bit] == NULL) continue;
 		mask |= 1 << bit;
 		if (first_bit == -1) first_bit = bit;
-		bit_count++;
+		isr_ptrs[bit_count++] = adc_out[bit];
 	}
+	isr_ptrs[bit_count] = NULL;
 	adc_stop_looping();
 	if (mask == 0) return;
 	uint32_t reg = 0;
-	reg |= REG_VAL(ADC_FCS_THRESH, 4 + (bit_count >> 1));
+	reg |= REG_VAL(ADC_FCS_THRESH, 4 + bit_count);
 	reg |= REG_VAL(ADC_FCS_OVER, 1);
 	reg |= REG_VAL(ADC_FCS_UNDER, 1);
 	reg |= REG_VAL(ADC_FCS_ERR, 1);
@@ -61,7 +64,7 @@ void adc_stop_looping() {
 }
 
 void adc_set_sample_rate(float freq) {
-	uint32_t val = nearbyintf(500000 * 0x100 / freq - 0x100);
+	uint32_t val = nearbyintf(((float)(48000000 / 4) / freq - 1) * 0x100);
 	if (val > 0xffffff) val = 0xffffff;
 	adc_hw->div = (val);
 }
